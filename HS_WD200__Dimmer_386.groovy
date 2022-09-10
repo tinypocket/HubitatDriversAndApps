@@ -105,6 +105,8 @@ metadata {
     command "setSwitchModeStatus"
     command "setDefaultColor", [[name: "Set Normal Mode LED Color", type: "NUMBER", range: 0..6, description: "0=White, 1=Red, 2=Green, 3=Blue, 4=Magenta, 5=Yellow, 6=Cyan"]]
     command "setBlinkDurationMS", [[name: "Set Blink Duration", type: "NUMBER", description: "Milliseconds (0 to 25500)"]]
+    command "setConfigParameter", [[name:"Parameter Number*", type: "NUMBER"], [name:"Value*", type: "NUMBER"], [name:"Size*", type: "NUMBER"]]
+
 
     fingerprint mfr: "000C", prod: "4447", model: "3036"
     //to add new fingerprints convert dec manufacturer to hex mfr, dec deviceType to hex prod, and dec deviceId to hex model
@@ -1154,6 +1156,28 @@ def cleanup() {
       state.remove(String.valueOf(i))
     }
   }
+}
+ 
+String setConfigParameter(number,  value, size) {
+   logDebug("setConfigParameter(number: $number, value: $value, size: $size)")
+   hubitat.zwave.Command cmd = zwave.configurationV1.configurationSet(parameterNumber: number as Short, scaledConfigurationValue: value as BigInteger, size: size as Short)
+   //return zwaveSecureEncap(cmd)
+   return zwaveSecureEncap(supervisedEncap(cmd))
+}
+
+hubitat.zwave.Command supervisedEncap(hubitat.zwave.Command cmd) {
+   if (getDataValue("S2")?.toInteger() != null) {
+      hubitat.zwave.commands.supervisionv1.SupervisionGet supervised = new hubitat.zwave.commands.supervisionv1.SupervisionGet()
+      supervised.sessionID = getSessionId()
+      logDebug("new supervised packet for session: ${supervised.sessionID}")
+      supervised.encapsulate(cmd)
+      if (!supervisedPackets[device.idAsLong]) { supervisedPackets[device.idAsLong] = [:] }
+      supervisedPackets[device.idAsLong][supervised.sessionID] = supervised.format()
+      runIn(supervisionCheckDelay, supervisionCheck)
+      return supervised
+   } else {
+      return cmd
+   }
 }
 
 private logInfo(msg) {
