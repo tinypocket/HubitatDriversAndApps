@@ -7,6 +7,7 @@
  *     ** LED avoids setting all LEDS unless explicitly specified
  *     ** button numbers
  *     ** sending pushed & held for single-hold
+       ** support startLeveLChange
  *
  *  Copyright 2019 Ben Rimmasch, modified by Nektarios for various things (including set All state for LEDS)
  *
@@ -64,7 +65,7 @@
  */
 
 metadata {
-  definition(name: "HS-WD200+ Dimmer", namespace: "codahq-hubitat", author: "Ben Rimmasch",
+  definition(name: "HS-WD200+ Dimmer (Nek)", namespace: "codahq-hubitat", author: "Ben Rimmasch",
     importUrl: "https://raw.githubusercontent.com/codahq/hubitat_codahq/master/devicestypes/homeseer-hs_wd200plus.groovy") {
     capability "Switch Level"
     capability "Actuator"
@@ -75,6 +76,7 @@ metadata {
     capability "Sensor"
     capability "PushableButton"
     capability "Configuration"
+    capability "ChangeLevel"
     command "tapUp1"
     command "tapDown1"
     command "tapUp2"
@@ -371,6 +373,15 @@ def off() {
     zwave.basicV1.basicSet(value: 0x00).format(),
     zwave.switchMultilevelV1.switchMultilevelGet().format()
   ], 5000)
+}
+
+def startLevelChange(direction) {
+    def upDown = direction == "down" ? 1 : 0
+    return zwave.switchMultilevelV1.switchMultilevelStartLevelChange(upDown: upDown, ignoreStartLevel: 1, startLevel: 0).format()
+}
+
+def stopLevelChange() {
+    return zwave.switchMultilevelV1.switchMultilevelStopLevelChange().format()
 }
 
 def setLevel(value) {
@@ -865,15 +876,11 @@ def zwaveEvent(hubitat.zwave.commands.centralscenev1.CentralSceneNotification cm
 
 def tapUp1Response(String buttonType) {
   sendEvent(name: "status", value: "Tap ▲")
-  def cmds= null
-  return [name: "pushed", value: 1, descriptionText: "$device.displayName Tap-Up-1 (button 1) pressed", isStateChange: true]
-  //cmds += [name: "released", value: 1, descriptionText: "$device.displayName Hold-Up (button 1) released", isStateChange: true]
-  //return cmds
+  [name: "pushed", value: 1, descriptionText: "$device.displayName Tap-Up-1 (button 1) pressed", isStateChange: true]
 }
 def tapDown1Response(String buttonType) {
   sendEvent(name: "status", value: "Tap ▼")
-  return [name: "pushed", value: 2, descriptionText: "$device.displayName Tap-Down-1 (button 2) pressed", isStateChange: true]
-  //cmds += [name: "released", value: 2, descriptionText: "$device.displayName Hold-Up (button 2) released", isStateChange: true]
+  [name: "pushed", value: 2, descriptionText: "$device.displayName Tap-Down-1 (button 2) pressed", isStateChange: true]
 }
 
 def tapUp2Response(String buttonType) {
@@ -931,13 +938,8 @@ def releaseDownResponse(String buttonType) {
 }
 
 def release(number) {
-    sendEvent(name: "status", value: "Released $number")
-    if (number) {
-        sendEvent([name: "released", value: number.toInteger(), descriptionText: "$device.displayName Hold-Down (button $number) released", isStateChange: true])
-    }
-    else {
-        sendEvent([name: "released", value: null, descriptionText: "$device.displayName Hold-Down (button $number) released", isStateChange: true])
-    }
+  sendEvent(name: "status", value: "Released $number")
+  sendEvent([name: "released", value: number.toInteger(), descriptionText: "$device.displayName Hold-Down (button $number) released", isStateChange: true])
 }
 
 def tapUp1() {
