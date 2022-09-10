@@ -50,15 +50,15 @@ def pageMainPage() {
             input "colorTempBulb", "capability.colorTemperature", title: "Match color temp of this bult when turned on",  multiple: false, required: false
         }
         section("Logging") {
-		    input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true	
-	    }
+            input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true    
+        }
         section("Button Event On/Off Values Type and Values") {
-		    input name: "onValue", type: "number", title: "Value for on button press", defaultValue: 7
+            input name: "onValue", type: "number", title: "Value for on button press", defaultValue: 7
             input name: "offValue", type: "number", title: "Value for off button press", defaultValue: 8
             input name: "onOffEvent", type:"enum", title: "Event type for on/off", options: ["pushed", "held"], description: "Select the type of button event sent for on/off.", defaultValue: "pushed", required: true
         }
         section("Button Event DIM Values Type and Values") {
-		    input name: "upValue", type: "number", title: "Value for button up hold", defaultValue: 5
+            input name: "upValue", type: "number", title: "Value for button up hold", defaultValue: 5
             input name: "downValue", type: "number", title: "Value for button down hold", defaultValue: 6
             input name: "dimEvent", type:"enum", title: "Event type for dim", options: ["pushed", "held"], description: "Select the type of button event sent for START dim. For END dim it is required that a release event be sent", defaultValue: "pushed", required: true
             input name: "refreshAfterDim", type: "bool", title: "Refresh after dim? Some switches have issues with this - try to disable or enable if having issues after dimming.", defaultValue: true
@@ -66,7 +66,7 @@ def pageMainPage() {
         section("Bulb Config") {
             input name: "minLevel", type: "number", title: "Minimum bulb level (1-99)", defaultValue: 5
             input name: "setBulbLevel", type: "bool", title: "Set bulb level when turned on?", description: "When cans are too dim that they won't turn on when sent an on command, set this to also set the minimum dim level.", defaultValue: false
-	    }
+        }
         section("Restrictions") {
             input "scenes", "capability.switch", title:"If any of these scenes are on, do not adjust the temperature/state of the bulb group (to allow a single or multiple bulbs to be indpenendly controlled)", multiple:true, required:false
         }
@@ -94,15 +94,15 @@ def pageMainPage() {
 
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
-	initialize()
+    log.debug "Installed with settings: ${settings}"
+    initialize()
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
+    log.debug "Updated with settings: ${settings}"
     atomicState.clear()
-	unsubscribe()
-	
+    unsubscribe()
+    
     
     
     atomicState.controlIsDimmableSwitch = controlSwitch.hasCommand("setLevel") //Check if control is a dimmable switch
@@ -118,18 +118,37 @@ def updated() {
     atomicState.mode3BulbsSameGroup = -1
     atomicState.mode4BulbsSameGroup = -1
     atomicState.abortExpectedStateCheck = 0
-    atomicState.setLevelOnlyOnce = [:]
+    atomicState.lastMode = null
+    atomicState.cache = null
+    def setLevelOnlyOnce = [:]
     if (numOfModes) {
-        atomicState.setLevelOnlyOnce[numOfModes] = false
+        setLevelOnlyOnce[numOfModes] = false
         schedule("0 0 0 * * ?",resetAtMidnight)
     }
+    atomicState.setLevelOnlyOnce = setLevelOnlyOnce
     
     
     /*log ("bulbs " + getBulbs())
     log ("bulbs group " + getBulbGroup())
     log ("bulb group for mode 1" + getModeSetting(1,"BulbGroup"))*/
     
+    cacheModeSettings()
     initialize()
+}
+
+def cacheModeSettings () {
+    atomicState.cache = [:]
+    def cache = [:] 
+    //cache["getBulbs_Group"] = getBulbs(true)
+    //cache["getBulbs_Defaut"] = getBulbs(false)
+    cache["getModeNumber"] = getModeNumber()
+    cache["getIfPressTwiceOn"] = getIfPressTwiceOn()
+    cache["getDeviceDifference_bulbs_getBulbs"] = getDeviceDifference(bulbs, getBulbs())
+    atomicState.cache = cache
+}
+
+def locationModeChanged(evt) {
+    cacheModeSettings()
 }
 
 def resetAtMidnight() {
@@ -204,7 +223,7 @@ def log(message, force=false) {
 
 def initialize() {
     log.warn "debug logging is: ${logEnable == true}"
-	if (logEnable) runIn(1800,logsOff)
+    if (logEnable) runIn(1800,logsOff)
     
     subscribeToEvents()
 }
@@ -215,6 +234,7 @@ def subscribeToEvents() {
     subscribe(controlSwitch, "pushed", buttonHandler)
     subscribe(controlSwitch, "held", buttonHandler)
     subscribe(controlSwitch, "released", buttonHandler)
+    subscribe(location, "mode", locationModeChanged)
     if (colorTempBulb) {
         subscribe(bulbs, "switch", bulbHandler)
     }
@@ -238,7 +258,9 @@ def getBulbOnLevel() {
             atomicState.levelBeforeModeLevel = computeAvgBulbLevel() //bulbGroup.latestValue("level")
         }
         if (getModeSetting(modeNumber, "SetLevelOnlyOnce")) {
-            atomicState.setLevelOnlyOnce[modeNumber] = true
+            def setLevelOnlyOnce = atomicState.setLevelOnlyOnce
+            setLevelOnlyOnce[modeNumber] = true
+            atomicState.setLevelOnlyOnce = setLevelOnlyOnce
         }
         log("BulbLevel ${getModeSetting(modeNumber, "BulbLevel")}")
         return getModeSetting(modeNumber, "BulbLevel")
@@ -309,6 +331,7 @@ def getBulbs(Boolean getGroupIfPossible=false) {
 }
 
 def getIfPressTwiceOn() {
+    if (atomicState.cache) {return atomicState.cache["getIfPressTwiceOn"]}
     def mode = getModeNumber()
     if (mode > 0) {
         return getModeSetting(getModeNumber(), "PressTwiceOn")
@@ -317,6 +340,7 @@ def getIfPressTwiceOn() {
 }
 
 def getModeNumber() {
+    if (atomicState.cache) {return atomicState.cache["getModeNumber"]}
     for (def i=1; i<=numOfModes; i++) {
         if (getModeSetting(i, "mode") == location.mode)
         return i
@@ -329,6 +353,7 @@ def buttonHandler(evt) {
     def evtValue = evt.value
     def evtDeviceId = evt.deviceId
     
+    log("?? Check IGNORING BUTTON HANDLER > $evtName $evtValue $onValue as it's different than expected to be ignored ($atomicState.ignoreNextSwitchButtonState) ${atomicState.ignoreNextSwitchButtonState=="on"} ${evtValue == onValue} ${ atomicState.ignoreNextSwitchButtonState=="on"} ${evtName == onOffEvent}")
     if (atomicState.ignoreNextSwitchButton && (now()-atomicState.ignoreNextSwitchButton) < atomicState.TIME_TO_IGNORE) {
         if (evtName == onOffEvent && ((evtValue == onValue && atomicState.ignoreNextSwitchButtonState=="on") ||
                                       (evtValue == offValue && atomicState.ignoreNextSwitchButtonState=="off"))) {
@@ -337,14 +362,14 @@ def buttonHandler(evt) {
             atomicState.ignoreNextSwitchButton = 0
             return
         } else {
-            log("NOT IGNORING BUTTON HANDLER > $evtName $evtValue as it's different than expected to be ignored ($atomicState.ignoreNextSwitchButtonState)")
+            log("NOT IGNORING BUTTON HANDLER > $evtName '$evtValue' '$onValue' as it's different than expected to be ignored ($atomicState.ignoreNextSwitchButtonState) ${atomicState.ignoreNextSwitchButtonState=="on"} ${evtValue == onValue} ${ atomicState.ignoreNextSwitchButtonState=="on"} ${evtName == onOffEvent}")
         }
     }
     log("BUTTON HANDLER > $evtName $evtValue")
     evtValue = evtValue.toInteger()
     
-    if (scenes) { scenes*.off() }
-    unschedule()
+    if (scenes && scenes.find { s -> s.switch=="on"}) { scenes*.off() }
+    //unschedule()
     atomicState.abortExpectedStateCheck = now()+10
     if (evtName == onOffEvent && evtValue == onValue) {
         //turned on
@@ -358,7 +383,13 @@ def buttonHandler(evt) {
 
             //if not in the mode-specific state (i.e. all bulbs on), get the bulbs that should be off and turn them off
             if (!currentlyInModeState) {
-                def diff = getDeviceDifference(bulbs, getBulbs())
+                def diff = null
+                if (atomicState.cache) {
+                    diff = atomicState.cache["getDeviceDifference_bulbs_getBulbs"]
+                }
+                else {
+                    diff = getDeviceDifference(bulbs, getBulbs())f
+                }
                 if (diff) {
                     log ("BUTTON HANDLER > turn off bulbs that should be off in this mode $diff")
                     diff*.off()
@@ -499,7 +530,6 @@ def turnBulbsOn(level=0) {
         //runIn(3, syncSwitchToBulbs)
     }
     
-    //turn off 6/1 to re-sync zibee network
     runInMillis(800, "checkExpectedState", [data: 1])
 }
 
@@ -553,10 +583,10 @@ def checkExpectedState(attempt) {
                atomicState.ignoreBulbChange = now()
            }
            break
-       case 4: 
+       case 4:  //also default
            if (setExpectedState()) {
-               log("found some bulbs out of sync attempt: $attempt")
-               runInMillis(4000, "checkExpectedState", [data:attempt+1])
+               log("found some bulbs out of sync in final attempt: $attempt")
+               //runInMillis(4000, "checkExpectedState", [data:attempt+1])
            } 
            else {
                 if (checkIfShouldAbortExpectedStateCheck("!ABORT! checkExpectedState > postCheck $attempt")) return //abort if button was pressed
@@ -907,8 +937,8 @@ def syncBulbLevelToSwitch(levelVal=-1) {
 }
 
 def logsOff(){
-	log.warn "debug logging disabled..."
-	logEnable = false
+    log.warn "debug logging disabled..."
+    logEnable = false
 }
 
   
