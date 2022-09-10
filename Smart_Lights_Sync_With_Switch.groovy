@@ -141,7 +141,7 @@ def cacheModeSettings () {
     def cache = [:] 
     //cache["getBulbs_Group"] = getBulbs(true)
     //cache["getBulbs_Defaut"] = getBulbs(false)
-    cache["getModeNumber"] = getModeNumber()
+    cache["getModeNumber"] = getModeNumber().toInteger()
     cache["getIfPressTwiceOn"] = getIfPressTwiceOn()
     cache["getDeviceDifference_bulbs_getBulbs"] = getDeviceDifference(bulbs, getBulbs())
     atomicState.cache = cache
@@ -152,7 +152,7 @@ def locationModeChanged(evt) {
 }
 
 def resetAtMidnight() {
-    atomicState.setLevelOnlyOnce = []
+    atomicState.setLevelOnlyOnce = [:]
 }
 
 
@@ -350,10 +350,9 @@ def getModeNumber() {
 
 def buttonHandler(evt) {
     def evtName = evt.name
-    def evtValue = evt.value
+    def evtValue = evt.value.toInteger()
     def evtDeviceId = evt.deviceId
     
-    log("?? Check IGNORING BUTTON HANDLER > $evtName $evtValue $onValue as it's different than expected to be ignored ($atomicState.ignoreNextSwitchButtonState) ${atomicState.ignoreNextSwitchButtonState=="on"} ${evtValue == onValue} ${ atomicState.ignoreNextSwitchButtonState=="on"} ${evtName == onOffEvent}")
     if (atomicState.ignoreNextSwitchButton && (now()-atomicState.ignoreNextSwitchButton) < atomicState.TIME_TO_IGNORE) {
         if (evtName == onOffEvent && ((evtValue == onValue && atomicState.ignoreNextSwitchButtonState=="on") ||
                                       (evtValue == offValue && atomicState.ignoreNextSwitchButtonState=="off"))) {
@@ -362,7 +361,7 @@ def buttonHandler(evt) {
             atomicState.ignoreNextSwitchButton = 0
             return
         } else {
-            log("NOT IGNORING BUTTON HANDLER > $evtName '$evtValue' '$onValue' as it's different than expected to be ignored ($atomicState.ignoreNextSwitchButtonState) ${atomicState.ignoreNextSwitchButtonState=="on"} ${evtValue == onValue} ${ atomicState.ignoreNextSwitchButtonState=="on"} ${evtName == onOffEvent}")
+            log("NOT IGNORING BUTTON HANDLER > $evtName '$evtValue' '$onValue' as it's different than expected to be ignored ($atomicState.ignoreNextSwitchButtonState)")
         }
     }
     log("BUTTON HANDLER > $evtName $evtValue")
@@ -473,7 +472,6 @@ def buttonHandler(evt) {
     }
     else if (evtName == "released") {
         //release dim up or down
-        evtValue = evtValue.toInteger()
         atomicState.TIME_TO_IGNORE = atomicState.DEFAULT_TIME_TO_IGNORE //revert back to the 500ms time to ignore
         if (evtValue == upValue) {
             atomicState.ignoreBulbChange=now()
@@ -509,7 +507,7 @@ def turnBulbsOff() {
     atomicState.ignoreBulbChange=now()+2000
     bulbGroup.off()
     atomicState.isModeSpecificState = true
-    runInMillis(800, "checkExpectedState", [data: 1])
+    runInMillis(4500, "checkExpectedState", [data: 1])
 }
 
 def turnBulbsOn(level=0) {
@@ -530,7 +528,7 @@ def turnBulbsOn(level=0) {
         //runIn(3, syncSwitchToBulbs)
     }
     
-    runInMillis(800, "checkExpectedState", [data: 1])
+    runInMillis(4500, "checkExpectedState", [data: 1])
 }
 
 //check & set bulb's expected on/off state, and level if on
@@ -664,7 +662,7 @@ def setExpectedState() {
             log("STATE not correct $d.label: ${d.latestValue("switch") != atomicState.expectedSwitch} = DeviceValue(${d.latestValue("switch")}) != ExpectedState(${atomicState.expectedSwitch};) BGV(${bulbGroup.latestValue("switch")})")
             return true
         }
-        def deviceLevel = d.latestValue("level")
+        def deviceLevel = d.latestValue("level").toInteger()
         if (deviceLevel > 99) {deviceLevel = 99}
         if (atomicState.expectedSwitch == "on" && expectedLevel > 0 && deviceLevel != expectedLevel) {
             wrongLevel = true
@@ -931,7 +929,7 @@ def syncBulbLevelToSwitch(levelVal=-1) {
     
     log("sync level $level")
     
-    runInMillis(1000, "checkExpectedState", [data: 1]) 
+    runInMillis(1500, "checkExpectedState", [data: 1]) 
     //runIn(2, subscribeToEvents) //instead of doing this here, do it after checkExpectedState succeeds
     //atomicState.ignoreBulbChange = 0
 }
