@@ -3,8 +3,8 @@
  *
  *  Copyright 2020 Nektarios
  * 
- *  LAST UPDATED: v12 4/3/2021 7:00am
-                  v13 5/9/2022
+ *  Changelog: 
+ *  9/10 - Fixed issue with event value not being parsed as Int. Added Cache for some values.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
