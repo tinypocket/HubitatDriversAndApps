@@ -8,6 +8,7 @@
  *     ** button numbers
  *     ** sending pushed & held for single-hold
        ** support startLeveLChange
+       ** supports push()
  *
  *  Copyright 2019 Ben Rimmasch, modified by Nektarios for various things (including set All state for LEDS)
  *
@@ -65,7 +66,7 @@
  */
 
 metadata {
-  definition(name: "HS-WD200+ Dimmer (Nek)", namespace: "codahq-hubitat", author: "Ben Rimmasch",
+  definition(name: "HS-WD200/300+ Dimmer (Nek)", namespace: "codahq-hubitat", author: "Ben Rimmasch",
     importUrl: "https://raw.githubusercontent.com/codahq/hubitat_codahq/master/devicestypes/homeseer-hs_wd200plus.groovy") {
     capability "Switch Level"
     capability "Actuator"
@@ -940,6 +941,41 @@ def releaseDownResponse(String buttonType) {
 def release(number) {
   sendEvent(name: "status", value: "Released $number")
   sendEvent([name: "released", value: number.toInteger(), descriptionText: "$device.displayName Hold-Down (button $number) released", isStateChange: true])
+}
+
+def push(button) {
+    switch (button) {
+        case 1:
+            sendEvent(tapUp1Response("digital"))
+            break
+        case 2:
+            sendEvent(tapDown1Response("digital"))
+            break
+        case 3:
+            sendEvent(tapUp2Response("digital"))
+            break
+        case 4:
+            sendEvent(tapDown2Response("digital"))
+            break
+        case 5:
+            sendEvent(tapUp3Response("digital"))
+            break
+        case 6:
+            sendEvent(tapDown3Response("digital"))
+            break
+        case 7:
+            sendEvent(tapUp4Response("digital"))
+            break
+        case 8:
+            sendEvent(tapDown4Response("digital"))
+            break
+        case 9:
+            sendEvent(tapUp5Response("digital"))
+            break
+        case 10:
+            sendEvent(tapDown5Response("digital"))
+            break
+    }
 }
 
 def tapUp1() {
