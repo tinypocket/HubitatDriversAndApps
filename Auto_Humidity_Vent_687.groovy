@@ -391,6 +391,9 @@ def checkHumidity() {
                     }
                     else {
                         //set level of tracking dimmers
+                        if (!state.autoTurnedOn) {
+                            if (startHumidityLevel) { startHumidityLevel.setLevel(currentHumidity) }
+                        }
                         if (currentHumidityLevel) { currentHumidityLevel.setLevel(currentHumidity) }
 
                         log.debug "checkHumidity() NO action: FansOn: ${fansOn}, CurrentHumidity ${currentHumidity}, AvgHumidity ${avgHumidity}, ON Threshold ${avgHumidity+settings.humidityActivateChange}" //commented 2017-13-06
