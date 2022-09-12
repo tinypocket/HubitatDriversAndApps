@@ -67,10 +67,10 @@ preferences {
         input "maxTimeOn", "number", title: "Maximum time to stay on",default: 60, required: false
     }
     section("Dimmer whose level will be set to target humidity") {
-        input "startHumidityLevel", "capability.dimmer", title:"Target Level Dimmer", multiple:false, required:false
+        input "startHumidityLevel", "capability.switchLevel", title:"Target Level Dimmer", multiple:false, required:false
     }
     section("Dimmer whose level will be set to current humidity") {
-        input "currentHumidityLevel", "capability.dimmer", title:"Current Level Dimmer", multiple:false, required:false
+        input "currentHumidityLevel", "capability.switchLevel", title:"Current Level Dimmer", multiple:false, required:false
     }
 
     section("Set notification options:") {
