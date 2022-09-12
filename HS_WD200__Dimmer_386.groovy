@@ -9,6 +9,7 @@
  *     ** sending pushed & held for single-hold
        ** support startLeveLChange
        ** supports push()
+       ** support Conig Change
  *
  *  Copyright 2019 Ben Rimmasch, modified by Nektarios for various things (including set All state for LEDS)
  *
@@ -1157,7 +1158,7 @@ def cleanup() {
     }
   }
 }
- 
+
 String setConfigParameter(number,  value, size) {
    logDebug("setConfigParameter(number: $number, value: $value, size: $size)")
    hubitat.zwave.Command cmd = zwave.configurationV1.configurationSet(parameterNumber: number as Short, scaledConfigurationValue: value as BigInteger, size: size as Short)
