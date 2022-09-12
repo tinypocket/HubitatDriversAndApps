@@ -34,46 +34,46 @@ definition (
 
 preferences {
 
-	section("Enable / Disable the following functionality:") {
+    section("Enable / Disable the following functionality:") {
         input "appEnabled", "bool", title: "Auto Humidity Vent", required:true, defaultValue:true
         input "fanControlEnabled", "bool", title: "Vent Fan Control", required:true, defaultValue:true
-	}
+    }
 
-	section("Choose a humidity sensor...") {
-		input "humiditySensor", "capability.relativeHumidityMeasurement", title: "Humidity Sensor", required: true
-	}
-	section("Enter the relative humudity level (%) above and below which the vent fans will activate and deactivate:") {
-		input "humidityActivateLevel", "number", title: "Humidity Activation Level", required: false, defaultValue:0
+    section("Choose a humidity sensor...") {
+        input "humiditySensor", "capability.relativeHumidityMeasurement", title: "Humidity Sensor", required: true
+    }
+    section("Enter the relative humudity level (%) above and below which the vent fans will activate and deactivate:") {
+        input "humidityActivateLevel", "number", title: "Humidity Activation Level", required: false, defaultValue:0
         input "humidityDeactivateLevel", "number", title: "Humidity Deactivation Level", required: false, defaultValue:0
-	}
+    }
     
     section("Alternatively, enter the humudity change (%) above which the vent fans will activate. Fans will deactivate when they return to the pre-activate level:") {
-		input "humidityActivateChange", "number", title: "Humidity Activation Level", required: false, defaultValue:5
-	}
+        input "humidityActivateChange", "number", title: "Humidity Activation Level", required: false, defaultValue:5
+    }
 
-	section("Select the vent fans to control...") {
-		input "fans", "capability.switch", title: "Vent Fans", multiple: true, required: true
-	}
+    section("Select the vent fans to control...") {
+        input "fans", "capability.switch", title: "Vent Fans", multiple: true, required: true
+    }
     
     section("Only turn off fans if these lights are also off...") {
-		input "lights", "capability.switch", title: "Lights", multiple: true, required: false
-	}
+        input "lights", "capability.switch", title: "Lights", multiple: true, required: false
+    }
 
-	section("Turn off after this amount of time, if humidity is low and (if specified) the lights are off") {
-		input "timerOff", "number", title: "Time after on to turn off",default: 10, required: false
-	}
+    section("Turn off after this amount of time, if humidity is low and (if specified) the lights are off") {
+        input "timerOff", "number", title: "Time after on to turn off",default: 10, required: false
+    }
     
     section("Turn off after this amount of time regardless of any other condition") {
-		input "maxTimeOn", "number", title: "Maximum time to stay on",default: 60, required: false
-	}
+        input "maxTimeOn", "number", title: "Maximum time to stay on",default: 60, required: false
+    }
     section("Dimmer whose level will be set to target humidity") {
-        input "startHumidityLevel", "capability.dimmer", title:"Select Automatic Fan Virtual Switch", multiple:false, required:false
+        input "startHumidityLevel", "capability.dimmer", title:"Target Level Dimmer", multiple:false, required:false
     }
     section("Dimmer whose level will be set to current humidity") {
-        input "currentHumidityLevel", "capability.dimmer", title:"Select Automatic Fan Virtual Switch", multiple:false, required:false
+        input "currentHumidityLevel", "capability.dimmer", title:"Current Level Dimmer", multiple:false, required:false
     }
 
-	section("Set notification options:") {
+    section("Set notification options:") {
         input "sendPushMessage", "bool", title: "Push notifications", required:true, defaultValue:false
         input "phone", "phone", title: "Send text messages to", required: false
     }
@@ -84,41 +84,41 @@ preferences {
 
 def installed() {
 
-	log.debug "${app.label} installed with settings: ${settings}"
+    log.debug "${app.label} installed with settings: ${settings}"
   
-	initialize()
+    initialize()
 
 }
 
 def uninstalled()
 {
 
-   	send("${app.label} uninstalled.")
+    send("${app.label} uninstalled.")
     
-	state.appEnabled = false
+    state.appEnabled = false
 
-	set_fans(false)
+    set_fans(false)
 
-	state.fanControlEnabled = false
+    state.fanControlEnabled = false
 
 }
 
 
 def updated() {
 
-	log.debug "${app.label} updated with settings: ${settings}"
+    log.debug "${app.label} updated with settings: ${settings}"
 
-	unsubscribe()
+    unsubscribe()
 
-	initialize()
-	checkHumidity()
+    initialize()
+    checkHumidity()
     //testDebug()
 }
 
 def testDebug() {
-	def inPastMin = 240
+    def inPastMin = 240
     def minAgo = 10
-	def currTime = Date.parse("5/30/2017  12:37:09 AM PDT")
+    def currTime = Date.parse("5/30/2017  12:37:09 AM PDT")
     //log.debug("***" + new Date(currTime).getDateTimeString())
     
     def recentStates = []
@@ -126,10 +126,10 @@ def testDebug() {
     def oldTime = null
     def recentTime = null
 
-	//if we need to go further back to check the humidity, keep track of how far back we're going
-	def nextMinAgo = minAgo
+    //if we need to go further back to check the humidity, keep track of how far back we're going
+    def nextMinAgo = minAgo
 
-	def c = 0
+    def c = 0
     while (recentStates.size()==0 && nextMinAgo < 2880) { //keep checking for past 48 hours
         //get average humidity *before the past minAgo minutes, for the past inPastMin minutes
         minAgo = nextMinAgo
@@ -139,13 +139,13 @@ def testDebug() {
         log.debug "***" + c + " Between ${oldTime.getDateTimeString()} and ${recentTime.getDateTimeString()}"
         
         //states between recentTime .. start time
-		recentStates = humiditySensor.eventsBetween(oldTime, recentTime, [max:1000]).findResults{ ev ->
-			if (ev.getName() =="humidity") {
-				return ev
-			}
-			return null
-		}
-																								 	
+        recentStates = humiditySensor.eventsBetween(oldTime, recentTime, [max:1000]).findResults{ ev ->
+            if (ev.getName() =="humidity") {
+                return ev
+            }
+            return null
+        }
+                                                                                                    
         nextMinAgo = nextMinAgo + 60
         c = c + 1
     }    
@@ -160,12 +160,12 @@ def testDebug() {
     def sumHumidity = 0
     for (def i = recentStates.size()-1; i>=0; i--)  {
         if (lastTime == 0) {
-        	lastTime = recentStates[i].date.getTime()
+            lastTime = recentStates[i].date.getTime()
             log.debug("***" + new Date(lastTime).getDateTimeString())
             lastDuration = 0
         }
         else {
-        	lastDuration = (recentStates[i].date.getTime() - lastTime)/1000/60
+            lastDuration = (recentStates[i].date.getTime() - lastTime)/1000/60
         }
         
         numMinutes = numMinutes + lastDuration
@@ -173,8 +173,8 @@ def testDebug() {
         //instead of assuming the humidity was the previous humidity, assume it was an average of thh current and last humidity
         
         def avg = 0
-		if (numMinutes >0 ) {
-        	avg = sumHumidity/numMinutes
+        if (numMinutes >0 ) {
+            avg = sumHumidity/numMinutes
         }
         log.debug "humidity at ${recentStates[i].date.format("h:mm:ss a MM-dd", location.timeZone)}: ${recentStates[i].value} runningavg: ${avg}"
        
@@ -193,10 +193,10 @@ def testDebug() {
     def avgHumidity = 0
     
     if (numMinutes!=0) {
-    	avgHumidity = sumHumidity/numMinutes
+        avgHumidity = sumHumidity/numMinutes
     }
     if (avgHumidity<= 0) {
-    	avgHumidity = getCurrentHumidity()
+        avgHumidity = getCurrentHumidity()
     }
     
     log.debug "***" + "Between ${minAgo} ago and ${inPastMin}: Mins ${numMinutes}, Avg ${(avgHumidity)}, "
@@ -207,11 +207,11 @@ def testDebug() {
 
 
 def initialize() {
-	state.clear()
-	
-	state.fansOnTime = now()
-	state.fansLastRunTime = 0
-	
+    state.clear()
+    
+    state.fansOnTime = now()
+    state.fansLastRunTime = 0
+    
     //subscribe(humiditySensor, "humidity", humidityChangeEvent)
 
     state.humidityThresholdActivated = false
@@ -220,8 +220,8 @@ def initialize() {
     //resetMultiplier()
     
     if (!state.log) {
-    	state.log = [:]
-	}
+        state.log = [:]
+    }
     
     if (!state.humidityLog) {
         state.humidityLog = []
@@ -230,59 +230,59 @@ def initialize() {
         state.humidityTenLog = []
     }
     
-	
-	if (settings.fanControlEnabled) {
-		if(state.fanControlEnabled == false) {
-			send("Vent Fan Control Enabled.")
+    
+    if (settings.fanControlEnabled) {
+        if(state.fanControlEnabled == false) {
+            send("Vent Fan Control Enabled.")
         } 
-		log.debug "Vent Fan Control Enabled."
-		state.fanControlEnabled = true
-	} 
-	else {
-		if(state.fanControlEnabled == true) {
-			send("Vent Fan Control Disabled.")
+        log.debug "Vent Fan Control Enabled."
+        state.fanControlEnabled = true
+    } 
+    else {
+        if(state.fanControlEnabled == true) {
+            send("Vent Fan Control Disabled.")
         }
         log.debug "Vent Fan Control Disabled."
-		state.fanControlEnabled = false
-	}
+        state.fanControlEnabled = false
+    }
 
-	if (settings.appEnabled) {
-		if(state.appEnabled == false) {
-			send("${app.label} Enabled.")
+    if (settings.appEnabled) {
+        if(state.appEnabled == false) {
+            send("${app.label} Enabled.")
         }
         log.debug "${app.label} Enabled."
         
-		subscribe(humiditySensor, "humidity", humidityChangeEvent) //, [filterEvents: false]
-		subscribe(fans, "switch", fanTurnedOnOff)
-		subscribe(lights, "switch", lightsTurnedOnOff)
+        subscribe(humiditySensor, "humidity", humidityChangeEvent) //, [filterEvents: false]
+        subscribe(fans, "switch", fanTurnedOnOff)
+        subscribe(lights, "switch", lightsTurnedOnOff)
         subscribe(remote, "button", buttonPressed)
 
-		state.appEnabled = true
-	} else {
-		if(state.appEnabled == true) {
-			send("${app.label} Disabled.")
+        state.appEnabled = true
+    } else {
+        if(state.appEnabled == true) {
+            send("${app.label} Disabled.")
         } 
         log.debug "${app.label} Disabled."
         
-		state.appEnabled = false
+        state.appEnabled = false
     }
     
     humidityChangeEvent(null)
 }
 
 def buttonPressed(evt) {
-	def jsonSlurper = new groovy.json.JsonSlurper()
-	def object = jsonSlurper.parseText(evt.data)
-	log.debug(object.buttonNumber)
+    def jsonSlurper = new groovy.json.JsonSlurper()
+    def object = jsonSlurper.parseText(evt.data)
+    log.debug(object.buttonNumber)
 }
 
 def humidityChangeEvent(evt) {
-	if(evt) {
-		log.debug "humidityChangeEvent() ${evt.descriptionText}"
+    if(evt) {
+        log.debug "humidityChangeEvent() ${evt.descriptionText}"
         state.log["lastHumidityChangeEvent"] = formattedDate()
     }
     else {
-    	log.debug "humidityChangeEvent()"
+        log.debug "humidityChangeEvent()"
     }
 
     runIn(10, checkHumidity)
@@ -290,55 +290,55 @@ def humidityChangeEvent(evt) {
 }
 
 def checkHumidity2() {
-	state.log["lastCheckHumidity2"] = formattedDate()
-	checkHumidity()
+    state.log["lastCheckHumidity2"] = formattedDate()
+    checkHumidity()
 }
 
 def checkHumidity() {
-	log.debug "checkHumidity()"
-	state.log["lastCheckHumidity"] = formattedDate()
-	def fansOn = areFansOn()
-	def h = getCurrentHumidity()
+    log.debug "checkHumidity()"
+    state.log["lastCheckHumidity"] = formattedDate()
+    def fansOn = areFansOn()
+    def currentHumidity = getCurrentHumidity()
 
-	log.debug "checkHumidity() Humidity: $h%, Activate: $humidityActivateLevel%, Deactivate: $humidityDeactivateLevel% , Change Activate: $humidityActivateChange%, FansOn: $fansOn"
+    log.debug "checkHumidity() Humidity: $currentHumidity%, Activate: $humidityActivateLevel%, Deactivate: $humidityDeactivateLevel% , Change Activate: $humidityActivateChange%, FansOn: $fansOn"
     
-	if (settings.appEnabled) {
+    if (settings.appEnabled) {
         if (settings.humidityActivateLevel > 0 && settings.humidityDeactivateLevel > 0) {
             if (fansOn) {
-                if (checkIfHumidityIsLow(h)) {
-                    log.debug "Humidity sufficient to deactivate vent fans: $h <= $humidityDeactivateLevel"
+                if (checkIfHumidityIsLow(currentHumidity)) {
+                    log.debug "Humidity sufficient to deactivate vent fans: $currentHumidity <= $humidityDeactivateLevel"
                     set_fans(false, false)
                     state.log["autoThresholdTurnedOffTime"] = formattedDate()
                 } else {
-					log.debug "Humidity not sufficient to deactivate vent fans: $h > $humidityDeactivateLevel"
+                    log.debug "Humidity not sufficient to deactivate vent fans: $currentHumidity > $humidityDeactivateLevel"
                 }
             } else if (!fansOn) {
-                if (checkIfHumidityIsHigh(h)) {
-					log.debug "Humidity sufficient to activate vent fans: $h >= $humidityActivateLevel"
+                if (checkIfHumidityIsHigh(currentHumidity)) {
+                    log.debug "Humidity sufficient to activate vent fans: $currentHumidity >= $humidityActivateLevel"
                     set_fans(true, true)
                     state.log["autoThresholdTurnedOnTime"] = formattedDate()
-				} else {
-                    log.debug "Humidity not sufficient to activate vent fans: $h < $humidityActivateLevel"
+                } else {
+                    log.debug "Humidity not sufficient to activate vent fans: $currentHumidity < $humidityActivateLevel"
                 }
             }
         }
-		else {
+        else {
             if (settings.humidityActivateChange > 0) {
                 //log.debug "About to check avg humidity"
                 def avgHumidity = getAvgHumidity(10, 240)
                 def avgHumidityTen = getAvgHumidity(1, 10)
-        		log.debug "AvgHumidity (10-240): ${avgHumidity}; (1-10): ${avgHumidityTen}; Is AutoOn: ${state.autoTurnedOn} "
+                log.debug "AvgHumidity (10-240): ${avgHumidity}; (1-10): ${avgHumidityTen}; Is AutoOn: ${state.autoTurnedOn} "
                 
-                def ch = getCurrentHumidity()
+                currentHumidity = getCurrentHumidity()
                                
-                state.humidityLog.push(formattedDate() + "\t@\t" + (Math.round(avgHumidity*100)/100 + "\t${fansOn}\t${ch}\t${(Math.round(avgHumidityTen*100)/100)}" ))
+                state.humidityLog.push(formattedDate() + "\t@\t" + (Math.round(avgHumidity*100)/100 + "\t${fansOn}\t${currentHumidity}\t${(Math.round(avgHumidityTen*100)/100)}" ))
                 state.humidityTenLog.push(formattedDate() + "@" + (Math.round(avgHumidityTen*100)/100))
                 
                 if (state.humidityLog.size() > 100) {
-                	state.humidityLog = state.humidityLog.drop(state.humidityLog.size() - 100)
+                    state.humidityLog = state.humidityLog.drop(state.humidityLog.size() - 100)
                 }
                 if (state.humidityTenLog.size() > 100) {
-                	state.humidityTenLog = state.humidityTenLog.drop(state.humidityTenLog.size() -  100)
+                    state.humidityTenLog = state.humidityTenLog.drop(state.humidityTenLog.size() -  100)
                 }
                 
                 state.lastMeasuredAvgHumidity = avgHumidity
@@ -346,82 +346,94 @@ def checkHumidity() {
 
                 if (avgHumidity>0){
 
-                	//h = getCurrentHumidity()
-                    h = ch
+                    //h = getCurrentHumidity()
+                    //h = currentHumidity
 
-                    if (!fansOn && h > (avgHumidity + settings.humidityActivateChange)) { //commented 2017-13-06
-                    //if (!fansOn && h > (avgHumidityTen + settings.humidityActivateChange)) { //new 2017-13-06
+                    if (!fansOn && currentHumidity > (avgHumidity + settings.humidityActivateChange)) { //commented 2017-13-06
+                    //if (!fansOn && currentHumidity > (avgHumidityTen + settings.humidityActivateChange)) { //new 2017-13-06
                     
-                        //log.debug "High humidity. Activate fans. Humidity: $h%, AvgHumidity: $avgHumidity"
+                        //log.debug "High humidity. Activate fans. Humidity: $currentHumidity%, AvgHumidity: $avgHumidity"
                         //state.humidityBeforeIncrease = avgHumidity + humidityActivateChange
                         //state.humidityBeforeIncrease = avgHumidity + humidityActivateChange //change to this on 12/28
 
                         //state.humidityBeforeIncrease = avgHumidityTen+1 //commented on 11/14/2016
-                        state.humidityBeforeIncrease = h //changed to this on 11/14/2016
+                        state.humidityBeforeIncrease = currentHumidity //changed to this on 11/14/2016
                         //state.humidityTriggerOff = avgHumidity+1 //changed to this on 11/14/2016
                         
                         def humidityOffChange = settings.humidityActivateChange / 2
                         if (humidityOffChange > 8) {
-                        	humidityOffChange = 8
+                            humidityOffChange = 8
                         }
                         state.humidityTriggerOff = avgHumidity + humidityOffChange
+                        
+                        //set level of tracking dimmers
+                        if (startHumidityLevel) { startHumidityLevel.setLevel(state.humidityTriggerOff) }
+                        if (currentHumidityLevel) { currentHumidityLevel.setLevel(currentHumidity) }
 
-                        send("High humidity. Activate fans. Humidity: $h%, AvgHumidity: $avgHumidity, AvgHumidityTen: $avgHumidityTen, HumidityBeforeIncrease: $state.humidityBeforeIncrease")
+
+                        send("High humidity. Activate fans. Humidity: $currentHumidity%, AvgHumidity: $avgHumidity, AvgHumidityTen: $avgHumidityTen, HumidityBeforeIncrease: $state.humidityBeforeIncrease")
                         state.log["autoTurnedOnTime"] = formattedDate()
 
                         set_fans(true, true)
                     }
-                    //else if (fansOn && state.autoTurnedOn && h <= (state.humidityBeforeIncrease)) { //removed +1 from being added to humidityBeforeIncrease on 11/14; commented 2017/6/13
-                    else if (fansOn && state.autoTurnedOn && h <= (state.humidityTriggerOff)) { //changed 2017/6/13
-                        //log.debug "Normal humidity. Deactivate fans. Humidity: $h%, AvgHumidity: $avgHumidity, HumidityBeforeIncrease: $state.humidityBeforeIncrease%"
-                        send("Normal humidity. Deactivate fans. Humidity: $h%, AvgHumidity: $avgHumidity, HumidityBeforeIncrease: $state.humidityBeforeIncrease%")
+                    //else if (fansOn && state.autoTurnedOn && currentHumidity <= (state.humidityBeforeIncrease)) { //removed +1 from being added to humidityBeforeIncrease on 11/14; commented 2017/6/13
+                    else if (fansOn && state.autoTurnedOn && currentHumidity <= (state.humidityTriggerOff)) { //changed 2017/6/13
+                        //log.debug "Normal humidity. Deactivate fans. Humidity: $currentHumidity%, AvgHumidity: $avgHumidity, HumidityBeforeIncrease: $state.humidityBeforeIncrease%"
+                        send("Normal humidity. Deactivate fans. Humidity: $currentHumidity%, AvgHumidity: $avgHumidity, HumidityBeforeIncrease: $state.humidityBeforeIncrease%")
                         state.log["autoTurnedOffTime"] = formattedDate()
                         set_fans(false, false)
+
+                        //set level of tracking dimmers
+                        if (startHumidityLevel) { startHumidityLevel.setLevel(currentHumidity) }
+                        if (currentHumidityLevel) { currentHumidityLevel.setLevel(currentHumidity) }
                     }
                     else {
-                    	log.debug "checkHumidity() NO action: FansOn: ${fansOn}, CurrentHumidity ${h}, AvgHumidity ${avgHumidity}, ON Threshold ${avgHumidity+settings.humidityActivateChange}" //commented 2017-13-06
-						if (!fansOn && h > (avgHumidityTen + settings.humidityActivateChange)) {
-							log.debug "IF using avgHumidityTen ${avgHumidityTen}, then fans would have activated!"
-						}
-						//log.debug "checkHumidity() NO action: FansOn: ${fansOn}, CurrentHumidity ${h}, ON Threshold ${avgHumidity+settings.humidityActivateChange}"  //new 2017-13-06
+                        //set level of tracking dimmers
+                        if (currentHumidityLevel) { currentHumidityLevel.setLevel(currentHumidity) }
+
+                        log.debug "checkHumidity() NO action: FansOn: ${fansOn}, CurrentHumidity ${currentHumidity}, AvgHumidity ${avgHumidity}, ON Threshold ${avgHumidity+settings.humidityActivateChange}" //commented 2017-13-06
+                        if (!fansOn && currentHumidity > (avgHumidityTen + settings.humidityActivateChange)) {
+                            log.debug "IF using avgHumidityTen ${avgHumidityTen}, then fans would have activated!"
+                        }
+                        //log.debug "checkHumidity() NO action: FansOn: ${fansOn}, CurrentHumidity ${h}, ON Threshold ${avgHumidity+settings.humidityActivateChange}"  //new 2017-13-06
                     }
-            	}
+                }
             }
         }
-	}
+    }
 
 }
 
 def areFansOn() {
-	return fans.findAll{it.latestValue("switch").toUpperCase() == "ON"}.size()!=0
+    return fans.findAll{it.latestValue("switch").toUpperCase() == "ON"}.size()!=0
 }
 
 def areLightsOn() {
-	return lights.findAll{it.latestValue("switch").toUpperCase() == "ON"}.size()!=0
+    return lights.findAll{it.latestValue("switch").toUpperCase() == "ON"}.size()!=0
 }
 
 def fanTurnedOnOff(evt) {
     if (evt.value == "on") {
-    	//fan turned on
+        //fan turned on
         if (!state.autoTurnedOn) {
-        	log.debug "Turning on timer for ${timerOff} since fan was turned on"
-			setFanCountDown()
+            log.debug "Turning on timer for ${timerOff} since fan was turned on"
+            setFanCountDown()
         }
     }
     else if (evt.value == "off") {
         unschedule(forceTurnOff)
-    	unschedule(turnOff)
+        unschedule(turnOff)
         //runIn(60, resetMultiplier)
         state.autoTurnedOn = false
     }
 }
 
 def getTimeMultiplier() {
-	if (state.autoTurnedOn) {
-    	return 2.5
+    if (state.autoTurnedOn) {
+        return 2.5
     }
     else {
-    	return 1.0
+        return 1.0
     }
 }
 
@@ -436,24 +448,24 @@ def setFanCountDown() {
 
 def lightsTurnedOnOff(evt) {
     if (evt.value == "off") {
-    	log.debug "Turning on timer for ${timerOff * getTimeMultiplier()} since fan was turned on and lights are off"
+        log.debug "Turning on timer for ${timerOff * getTimeMultiplier()} since fan was turned on and lights are off"
         if (timerOff != null) {
-			runIn((int)(timerOff * 60 * getTimeMultiplier()), turnOff)
+            runIn((int)(timerOff * 60 * getTimeMultiplier()), turnOff)
         }
     }
 }
 
 def turnOff() {
-	if (!areFansOn()) {
-    	log.debug "Fans are already off"
+    if (!areFansOn()) {
+        log.debug "Fans are already off"
         state.log["lastTurnOff_fansAlreadyOff"] = formattedDate()
     }
     else {
-    	state.log["lastTurnOff_fansOn"] = formattedDate()
-    	if (!state.autoTurnedOn) {
+        state.log["lastTurnOff_fansOn"] = formattedDate()
+        if (!state.autoTurnedOn) {
             //if didn't auto-turn on...
             //if lights are on, postpone, otherwise turn off
-        	if (lights && areLightsOn()) {
+            if (lights && areLightsOn()) {
                 log.debug "Postpone turning off; lights on"
                 runIn((int)(timerOff * 60 * getTimeMultiplier()), turnOff)
             }
@@ -466,23 +478,23 @@ def turnOff() {
             }
         }
         else {
-        	//if auto-turned on, check if humidity is low enough to change by manually calling event handlery
-        	humidityChangeEvent(null)
+            //if auto-turned on, check if humidity is low enough to change by manually calling event handlery
+            humidityChangeEvent(null)
             //if auto-turned on, check if humidity is low enough to turn off
             //do nothing -- just wait for the humidity change event
             
             //if too high, postpone 
-        	//if (humidityActivateLevel > 0 && !checkIfHumidityIsLow(0)) {
-    		//	log.debug "Postpone turning off; humidity too high"
-        	//	runIn(timerOff * 60, turnOff)
-    		//}
+            //if (humidityActivateLevel > 0 && !checkIfHumidityIsLow(0)) {
+            //  log.debug "Postpone turning off; humidity too high"
+            //  runIn(timerOff * 60, turnOff)
+            //}
         }        
     }
 }
 
 def forceTurnOff() {
-	if (!areFansOn()) {
-    	log.debug "Fans are already off"
+    if (!areFansOn()) {
+        log.debug "Fans are already off"
         state.log["lastForceTurnOff_fansAlreadyOff"] = formattedDate()
     }
     else {
@@ -494,24 +506,24 @@ def forceTurnOff() {
 }
 
 def getCurrentHumidity() {
-	def h = 0.0 as BigDecimal
-	//if (settings.appEnabled) {
-	h = settings.humiditySensor.currentValue('humidity')
+    def h = 0.0 as BigDecimal
+    //if (settings.appEnabled) {
+    h = settings.humiditySensor.currentValue('humidity')
     
     //settings.humiditySensor.
     //statesSince("motion", new Date((long)t0), [max:pastmin*10]
     
     //state.AvgHumidityPastHour = 
 /*
-		//Simulator is broken and requires this work around for testing.	
-		if (settings.humiditySensor.latestState('humidity')) {
-        	log.debug settings.humiditySensor.latestState('humidity').stringValue[0..-2]
-        	h = settings.humiditySensor.latestState('humidity').stringValue[0..-2].toBigDecimal()
+        //Simulator is broken and requires this work around for testing.    
+        if (settings.humiditySensor.latestState('humidity')) {
+            log.debug settings.humiditySensor.latestState('humidity').stringValue[0..-2]
+            h = settings.humiditySensor.latestState('humidity').stringValue[0..-2].toBigDecimal()
         } else {
-        	h = 20
+            h = 20
         }        
 */
-	//}
+    //}
     
     //get average of past 1 hour
     
@@ -520,11 +532,11 @@ def getCurrentHumidity() {
 
 //NOTE: this will return the current humidity if there wre no humidity changed events in the past hour
 def getAvgHumidity(minAgo, inPastMin) {
-	if (minAgo == 0) {
-    	minAgo = 10
+    if (minAgo == 0) {
+        minAgo = 10
     }
-	if (inPastMin == 0) {
-    	inPastMin = 240
+    if (inPastMin == 0) {
+        inPastMin = 240
     }
     def currTime = now()
     
@@ -533,10 +545,10 @@ def getAvgHumidity(minAgo, inPastMin) {
     def oldTime = null
     def recentTime = null
 
-	//if we need to go further back to check the humidity, keep track of how far back we're going
-	def nextMinAgo = minAgo
+    //if we need to go further back to check the humidity, keep track of how far back we're going
+    def nextMinAgo = minAgo
 
-	def c = 0
+    def c = 0
     while (recentStates.size()==0 && nextMinAgo < 2880) { //keep checking for past 48 hours
         //get average humidity *before the past minAgo minutes, for the past inPastMin minutes
         minAgo = nextMinAgo
@@ -544,12 +556,12 @@ def getAvgHumidity(minAgo, inPastMin) {
         recentTime = new Date((long)currTime - (inPastMin * 60 *1000))
         
         //states between recentTime .. start time
-		recentStates = humiditySensor.eventsBetween(oldTime, recentTime, [max:1000]).findResults{ ev ->
-			if (ev.getName() =="humidity") {
-				return ev
-			}
-			return null
-		}
+        recentStates = humiditySensor.eventsBetween(oldTime, recentTime, [max:1000]).findResults{ ev ->
+            if (ev.getName() =="humidity") {
+                return ev
+            }
+            return null
+        }
         nextMinAgo = nextMinAgo + 60
         c = c + 1
     }    
@@ -562,11 +574,11 @@ def getAvgHumidity(minAgo, inPastMin) {
     def sumHumidity = 0
     for (def i = recentStates.size()-1; i>=0; i--)  {
         if (lastTime == 0) {
-        	lastTime = recentStates[i].date.getTime()
+            lastTime = recentStates[i].date.getTime()
             lastDuration = 0
         }
         else {
-        	lastDuration = (recentStates[i].date.getTime() - lastTime)/1000/60
+            lastDuration = (recentStates[i].date.getTime() - lastTime)/1000/60
         }
         
         numMinutes = numMinutes + lastDuration
@@ -574,8 +586,8 @@ def getAvgHumidity(minAgo, inPastMin) {
         //instead of assuming the humidity was the previous humidity, assume it was an average of thh current and last humidity
         
         def avg = 0
-		if (numMinutes >0 ) {
-        	avg = sumHumidity/numMinutes
+        if (numMinutes >0 ) {
+            avg = sumHumidity/numMinutes
         }
         log.debug "humidity at ${recentStates[i].date.format("h:mm:ss a MM-dd", location.timeZone)}: ${recentStates[i].value} runningavg: ${avg}"
        
@@ -594,49 +606,49 @@ def getAvgHumidity(minAgo, inPastMin) {
     def avgHumidity = 0
     
     if (numMinutes!=0) {
-    	avgHumidity = sumHumidity/numMinutes
+        avgHumidity = sumHumidity/numMinutes
     }
     if (avgHumidity<= 0) {
-    	avgHumidity = getCurrentHumidity()
+        avgHumidity = getCurrentHumidity()
     }
 
     return avgHumidity
 }
 
 def checkIfHumidityIsHigh(h) {
-	if (humidityActivateLevel == 0) {
-    	return false
+    if (humidityActivateLevel == 0) {
+        return false
     }
 
-	if (h==0) {
-    	h = getCurrentHumidity()
+    if (h==0) {
+        h = getCurrentHumidity()
     }
-	if (h<=0 || h>=100) {
-		return false
-	}
+    if (h<=0 || h>=100) {
+        return false
+    }
     return h >= humidityActivateLevel
 }
 
 def checkIfHumidityIsLow(h) {
-	if (humidityDeactivateLevel == 0) {
-    	return false
+    if (humidityDeactivateLevel == 0) {
+        return false
     }
-	if (h==0) {
-    	h = getCurrentHumidity()
+    if (h==0) {
+        h = getCurrentHumidity()
     }
-	if (h<=0 || h>=100) {
-		return false
-	}
+    if (h<=0 || h>=100) {
+        return false
+    }
     return h <= humidityDeactivateLevel
 }
 
 def set_fans(fan_state, autoTurnOn = false) {
-	state.autoTurnedOn = autoTurnOn
+    state.autoTurnedOn = autoTurnOn
 
-	if (fan_state) {
-    	//if all fans are not on, then turn them on 
-    	if (fans.findAll{it.latestValue("switch").toUpperCase() == "ON"}.size()!=fans.size()) {
-        	setFanCountDown()
+    if (fan_state) {
+        //if all fans are not on, then turn them on 
+        if (fans.findAll{it.latestValue("switch").toUpperCase() == "ON"}.size()!=fans.size()) {
+            setFanCountDown()
         
             send("${app.label} fans On.")
             state.fansOnTime = now()
@@ -645,29 +657,29 @@ def set_fans(fan_state, autoTurnOn = false) {
             } else {
                 send("${app.label} fan control is disabled.")
             }
-		} else {
+        } else {
             log.debug "${app.label} fans already On."
-		}        
+        }        
     } else {
-    	if (areFansOn()) {
-	    	send("${app.label} fans Off.")
+        if (areFansOn()) {
+            send("${app.label} fans Off.")
             state.fansLastRunTime = (now() - state.fansOnTime)
 
-		    //BigInteger ms = new java.math.BigInteger(state.fansLastRunTime)
+            //BigInteger ms = new java.math.BigInteger(state.fansLastRunTime)
             BigInteger ms = state.fansLastRunTime.toBigInteger()
-			int seconds = (BigInteger) (((BigInteger) ms / (1000I)).toBigInteger()                  % 60I)
-			int minutes = (BigInteger) (((BigInteger) ms / (1000I * 60I)).toBigInteger()            % 60I)
-			int hours   = (BigInteger) (((BigInteger) ms / (1000I * 60I * 60I)).toBigInteger()      % 24I)
-			int days    = (BigInteger)  ((BigInteger) ms / (1000I * 60I * 60I * 24I)).toBigInteger()
+            int seconds = (BigInteger) (((BigInteger) ms / (1000I)).toBigInteger()                  % 60I)
+            int minutes = (BigInteger) (((BigInteger) ms / (1000I * 60I)).toBigInteger()            % 60I)
+            int hours   = (BigInteger) (((BigInteger) ms / (1000I * 60I * 60I)).toBigInteger()      % 24I)
+            int days    = (BigInteger)  ((BigInteger) ms / (1000I * 60I * 60I * 24I)).toBigInteger()
 
-			def sb = String.format("${app.label} cycle: %d:%02d:%02d:%02d", days, hours, minutes, seconds)
-			
-		    send(sb)
+            def sb = String.format("${app.label} cycle: %d:%02d:%02d:%02d", days, hours, minutes, seconds)
+            
+            send(sb)
 
-			if (settings.fanControlEnabled) {
-    	    	fans.off()
-	        } else {
-    	    	send("${app.label} fan control is disabled.")
+            if (settings.fanControlEnabled) {
+                fans.off()
+            } else {
+                send("${app.label} fan control is disabled.")
             }
             state.fansHoldoff = now()
         } else {
@@ -684,7 +696,7 @@ private formattedDate() {
 
 private send(msg) {
 
-	if (sendPushMessage) {
+    if (sendPushMessage) {
         sendPush(msg)
     }
 
