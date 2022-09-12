@@ -74,12 +74,12 @@ def initialize() {
     
     subscribe(startHumidityLevel, "level", levelChangeEvent) //, [filterEvents: false]
     subscribe(currentHumidityLevel, "level", levelChangeEvent) //, [filterEvents: false]
-
+    updateLedHumidity()
 }
 
 def levelChangeEvent(evt) {
     if(evt) {
-        log.debug "levelChangeEvent() ${evt.descriptionText}"
+        log("levelChangeEvent() ${evt.descriptionText}")
     }
     updateLedHumidity()
 }
@@ -88,6 +88,7 @@ def updateLedHumidity() {
     def startLevel = startHumidityLevel.latestValue("level")
     def currentLevel = currentHumidityLevel.latestValue("level")
 
+    log("updateLedHumidity: current: $currentLevel start:$startLevel")
     if (startLevel == currentLevel) {
         wdSwitch.setSwitchModeNormal()
         return

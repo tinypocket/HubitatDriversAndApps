@@ -1,7 +1,7 @@
 /**
  *  Auto Humidity Vent
  *
- *  Copyright 2014 Jonathan Andersson, modified by Nektarios to work with % changes over past average humidity
+ *  Copyright 2014 Jonathan Andersson, modified by Nektarios to work with % changes over past average humidity, and more
 
 LAST UPDATED: 10/20/2020
 
@@ -22,7 +22,7 @@ LAST UPDATED: 10/20/2020
 definition (
 
     name: "Auto Humidity Vent",
-    namespace: "jonathan-a",
+    namespace: "jonathan-a, nektarios",
     author: "Jonathan Andersson modified by Nek",
     description: "When the humidity reaches a specified level, activate one or more vent fans until the humidity is reduced to a specified level.",
     category: "Convenience",
@@ -321,6 +321,8 @@ def checkHumidity() {
                     log.debug "Humidity not sufficient to activate vent fans: $currentHumidity < $humidityActivateLevel"
                 }
             }
+            if (startHumidityLevel) { startHumidityLevel.setLevel(currentHumidity) }
+            if (currentHumidityLevel) { currentHumidityLevel.setLevel(currentHumidity) }
         }
         else {
             if (settings.humidityActivateChange > 0) {
@@ -398,6 +400,10 @@ def checkHumidity() {
                         //log.debug "checkHumidity() NO action: FansOn: ${fansOn}, CurrentHumidity ${h}, ON Threshold ${avgHumidity+settings.humidityActivateChange}"  //new 2017-13-06
                     }
                 }
+            }
+            else {
+                if (startHumidityLevel) { startHumidityLevel.setLevel(currentHumidity) }
+                if (currentHumidityLevel) { currentHumidityLevel.setLevel(currentHumidity) }
             }
         }
     }
