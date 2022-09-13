@@ -107,7 +107,8 @@ metadata {
     command "setDefaultColor", [[name: "Set Normal Mode LED Color", type: "NUMBER", range: 0..6, description: "0=White, 1=Red, 2=Green, 3=Blue, 4=Magenta, 5=Yellow, 6=Cyan"]]
     command "setBlinkDurationMS", [[name: "Set Blink Duration", type: "NUMBER", description: "Milliseconds (0 to 25500)"]]
     command "setConfigParameter", [[name:"Parameter Number*", type: "NUMBER"], [name:"Value*", type: "NUMBER"], [name:"Size*", type: "NUMBER"]]
-
+    command "setSwitchSmartBulbModeOn"
+    command "setSwitchSmartBulbModeOff"
 
     fingerprint mfr: "000C", prod: "4447", model: "3036"
     //to add new fingerprints convert dec manufacturer to hex mfr, dec deviceType to hex prod, and dec deviceId to hex model
@@ -748,6 +749,14 @@ def setSwitchModeStatus() {
   def cmds = []
   cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 13, size: 1).format()
   delayBetween(cmds, 500)
+}
+
+def setSwitchSmartBulbModeOn() {
+    setConfigParameter(37,1,1)
+}
+
+def setSwitchSmartBulbModeOff() {
+    setConfigParameter(37,0,1)
 }
 
 /*
