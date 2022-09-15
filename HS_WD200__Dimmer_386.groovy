@@ -68,7 +68,7 @@
 
 metadata {
   definition(name: "HS-WD200/300+ Dimmer (Nek)", namespace: "codahq-hubitat", author: "Ben Rimmasch",
-    importUrl: "https://raw.githubusercontent.com/codahq/hubitat_codahq/master/devicestypes/homeseer-hs_wd200plus.groovy") {
+    importUrl: "https://raw.githubusercontent.com/tinypocket/HubitatDriversAndApps/main/HS_WD200__Dimmer_386.groovy") {
     capability "Switch Level"
     capability "Actuator"
 //    capability "Indicator"
