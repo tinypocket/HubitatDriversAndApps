@@ -838,7 +838,7 @@ def controlLevelHandler(evt) {
     //runIn(2, subscribeToEvents)
 }
 def bulbGroupLevelHandler(evt) {
-    /*if (atomicState.ignoreBulbChange && (now()-atomicState.ignoreBulbChange) < atomicState.TIME_TO_IGNORE) {
+    if (atomicState.ignoreBulbChange && (now()-atomicState.ignoreBulbChange) < atomicState.TIME_TO_IGNORE) {
         log("BULB GROUP LEVEL HANDLER ignore level change $evt.value")
         return
     }
@@ -849,8 +849,14 @@ def bulbGroupLevelHandler(evt) {
         log("BULB GROUP LEVEL HANDLER > A scene is on!")
         return
     }
+    
+    //check state so that the indidual bulb levels can be refreshed if needed
+    runInMillis(4500, "checkExpectedState", [data: 1])
+    runIn(5, syncSwitchToBulbs)
+    //sync switch to the new level after some time
+    runIn(15, syncSwitchToBulbs2)
 
-    if (evt.name == "level") {
+    /*if (evt.name == "level") {
         def val = Integer.parseInt(evt.value)
         atomicState.ignoreSwitchChange=now()
         atomicState.TIME_TO_IGNORE = atomicState.LONG_TIME_TO_IGNORE //ignore for much longer to avoid processing events from switch (e.g. if only 1 of 4 bulbs has level changed, we don't want the switch handler to trigger and set the level of the other 3)
@@ -859,6 +865,9 @@ def bulbGroupLevelHandler(evt) {
    
         atomicState.ignoreSwitchChange=now()
     }*/
+}
+def syncSwitchToBulbs2() {
+    syncSwitchToBulbs()
 }
 
 def syncSwitchToBulbs(level=0, forceOn=false) {
