@@ -25,8 +25,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Author: Ben Rimmasch
- *	Date: 2019-06-07
+ *  Author: Ben Rimmasch
+ *  Date: 2019-06-07
  *
  *  Changelog:
  *  1.0       2019-06-07 Initial Hubitat Version
@@ -35,17 +35,17 @@
  *  1.0.3     2019-09-12 Fixed the delay between level gets in setLevel
  *
  *
- *	Previous Driver's Changelog:
- *	1.0.dd.9  13-Feb-2019 Added dummy setLevel command with duration for compatibility with HA Bridge, others? (darwin@darwinsden.com)
- *	1.0.dd.8  28-Jul-2018 Additional protection against floating point default preference values
- *	1.0.dd.6  27-Jul-2018 Added call to set led flash rate and added protection against floating point default preference values
- *	1.0.dd.5  26-Mar-2018 Corrected issues: 1) Turning off all LEDs did not return switch to Normal mode,
+ *  Previous Driver's Changelog:
+ *  1.0.dd.9  13-Feb-2019 Added dummy setLevel command with duration for compatibility with HA Bridge, others? (darwin@darwinsden.com)
+ *  1.0.dd.8  28-Jul-2018 Additional protection against floating point default preference values
+ *  1.0.dd.6  27-Jul-2018 Added call to set led flash rate and added protection against floating point default preference values
+ *  1.0.dd.5  26-Mar-2018 Corrected issues: 1) Turning off all LEDs did not return switch to Normal mode,
  *                        2) Turning off last lit LED would set Normal mode, but leave LED state as on (darwin@darwinsden.com)
- *	1.0.dd.4  28-Feb-2018 Updated all LED option to use LED=0 (8 will be depricated) and increased delay by 50ms (darwin@darwinsden.com)
- *	1.0.dd.3  19-Feb-2018 Corrected bit-wise blink off operator (darwin@darwinsden.com)
- *	1.0.dd.2  16-Feb 2018 Added button number labels to virtual buttons and reduced size (darwin@darwinsden.com)
- *	1.0.dd.1  15-Feb 2018 Added option to set all LED's simultaneously(darwin@darwinsden.com)
- *	1.0	      Jan    2017 Initial Version
+ *  1.0.dd.4  28-Feb-2018 Updated all LED option to use LED=0 (8 will be depricated) and increased delay by 50ms (darwin@darwinsden.com)
+ *  1.0.dd.3  19-Feb-2018 Corrected bit-wise blink off operator (darwin@darwinsden.com)
+ *  1.0.dd.2  16-Feb 2018 Added button number labels to virtual buttons and reduced size (darwin@darwinsden.com)
+ *  1.0.dd.1  15-Feb 2018 Added option to set all LED's simultaneously(darwin@darwinsden.com)
+ *  1.0       Jan    2017 Initial Version
  *
  *
  *   Button Mappings:
@@ -71,7 +71,7 @@ metadata {
     importUrl: "https://raw.githubusercontent.com/codahq/hubitat_codahq/master/devicestypes/homeseer-hs_wd200plus.groovy") {
     capability "Switch Level"
     capability "Actuator"
-    capability "Indicator"
+//    capability "Indicator"
     capability "Switch"
     capability "Polling"
     capability "Refresh"
@@ -133,11 +133,15 @@ metadata {
   }
 
   preferences {
+    input("wireConfig", "enum", title: "Number of Wires", options: ["3-wire (default)", "2-wire"], description: "Select number of wires in installation", required: false)
     input "doubleTapToFullBright", "bool", title: "Double-Tap Up sets to full brightness", defaultValue: false, displayDuringSetup: true, required: false
     input "singleTapToFullBright", "bool", title: "Single-Tap Up sets to full brightness", defaultValue: false, displayDuringSetup: true, required: false
     input "doubleTapDownToDim", "bool", title: "Double-Tap Down sets to 25% level", defaultValue: false, displayDuringSetup: true, required: false
     input "reverseSwitch", "bool", title: "Reverse Switch", defaultValue: false, displayDuringSetup: true, required: false
     input "bottomled", "bool", title: "Bottom LED On if Load is Off", defaultValue: false, displayDuringSetup: true, required: false
+    input "centralScenesDisabled", "bool", title: "Disable scences (multi-tap)", defaultValue: false, displayDuringSetup: true, required: false
+    input "ledBrightness", "number", title: "Sets relative LED indicator brightness 0=Lowest intensity; 6=Highest intensity", defaultValue: 3, displayDuringSetup: true, required: false
+    input("lowestDimLevel", "number", title: "Lowest Dim Level: 3-wire mode (1=16%, 14=25%) 2-wire mode (1=25%, 14=30%) [default: 1]", defaultValue:1, range: "0..14", required: false)
     input("localcontrolramprate", "number", title: "Press Configuration button after changing preferences\n\nLocal Ramp Rate: Duration (0-90)(1=1 sec) [default: 3]", defaultValue: 3, range: "0..90", required: false)
     input("remotecontrolramprate", "number", title: "Remote Ramp Rate: duration (0-90)(1=1 sec) [default: 3]", defaultValue: 3, range: "0..90", required: false)
     input("color", "enum", title: "Default LED Color", options: ["White", "Red", "Green", "Blue", "Magenta", "Yellow", "Cyan"], description: "Select Color", required: false)
@@ -1105,11 +1109,37 @@ def setPrefs() {
     cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 4, size: 1).format()
   }
 
-  if (bottomled) {
+  if (!bottomled) {
     cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()
   }
   else {
     cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()
+  }
+    
+  if (wireConfig && wireConfig=="2-wire") {
+    cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 32, size: 1).format()
+  }
+  else {
+    cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 32, size: 1).format()
+  }
+    
+  if (centralScenesDisabled) {
+    cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 6, size: 1).format()
+  }
+  else {
+    cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 6, size: 1).format()
+  }
+    
+  if (ledBrightness != null) {
+     cmds << zwave.configurationV2.configurationSet(configurationValue: [ledBrightness.toInteger()], parameterNumber: 34, size: 1).format() 
+  }
+  
+    
+  if (lowestDimLevel) {
+    cmds << zwave.configurationV2.configurationSet(configurationValue: [lowestDimLevel.toInteger()], parameterNumber: 5, size: 1).format()
+  }
+  else {
+    cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 5, size: 1).format()
   }
 
   //Enable the following configuration gets to verify configuration in the logs
