@@ -25,7 +25,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Author: Ben Rimmasch
+ *  Author: Original Ben Rimmasch, modified by Nektarios
  *  Date: 2019-06-07
  *
  *  Changelog:
