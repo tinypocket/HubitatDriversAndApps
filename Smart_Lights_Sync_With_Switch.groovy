@@ -37,6 +37,9 @@ def pageMainPage() {
         section {
             label(title: "Label This SmartApp", required: false, defaultValue: "", description: "Highly recommended", submitOnChange: true)
         }
+        section("Pause") {
+            input "pauseApp", "bool", title: "Pause app",  multiple: false, required: true
+        }
         section("Switch") {
             input "controlSwitch", "capability.pushableButton", title: "Dimmer that will control the state of the can lights",  multiple: false, required: true
         }
@@ -48,6 +51,9 @@ def pageMainPage() {
         }
         section("Color Temp Bulb") {
             input "colorTempBulb", "capability.colorTemperature", title: "Match color temp of this bult when turned on",  multiple: false, required: false
+            List vars = []
+            getAllGlobalVars().each{vars += it.key}
+            input "colorTempBulbVar", "enum", title: "Or, Variable to match", options: vars
         }
         section("Logging") {
             input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true    
@@ -225,7 +231,12 @@ def initialize() {
     log.warn "debug logging is: ${logEnable == true}"
     if (logEnable) runIn(1800,logsOff)
     
-    subscribeToEvents()
+    if (!pauseApp) {
+        subscribeToEvents()
+    }
+    else {
+        log("App is paused.")
+    }
 }
 
 def subscribeToEvents() {
@@ -237,6 +248,9 @@ def subscribeToEvents() {
     subscribe(location, "mode", locationModeChanged)
     if (colorTempBulb) {
         subscribe(bulbs, "switch", bulbHandler)
+    }
+    if (colorTempBulbVar) {
+        subcribe(location, "variable:colorTempBulbVar.value", bulbHandler)
     }
 }
 
@@ -803,7 +817,14 @@ def bulbGroupSwitchHandler(evt) {
 def bulbHandler(evt) {
     if (!isAnySceneOn() && colorTempBulb && evt.name == "switch" && evt.value == "on") {
         def dev = evt.getDevice()
-        def correctCT = colorTempBulb.latestValue("colorTemperature").toInteger()
+        def correctCT = 0
+        if (colorTempBulb) {
+            correctCT = colorTempBulb.latestValue("colorTemperature").toInteger()
+        }
+        else if (colorTempBulbVar) {
+            correctCT = getGlobalVar(colorTempBulbVar).value
+        }
+
         def deviceCT = dev.latestValue("colorTemperature").toInteger()
         if (deviceCT != correctCT) {
             log("incorrect CT")
